@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/html">
+<head>
+    <meta charset="UTF-8">
+    <title>Zfile</title>
+</head>
+<body>
+<p>z.rslv.xyz is a resolver for files in published Zenodo packages.</p>
+<p>Usage:</p>
+<pre>
+https://z.rslv.xyz/DOI[/file]
+
+DOI = published DOI without scheme, url, or other embellishments. e.g. "10.5281/zenodo.11400483"
+file = Name of file in published package.
+
+If file is not provided, then the the package JSON is returned from the Zenodo API.
+</pre>
+<footer>
+    <dl>
+        <dt>Source</dt>
+        <dd>https://github.com/datadavev/zfile</dd>
+        <dt>LICENSE</dt>
+        <dd><a href="https://raw.githubusercontent.com/datadavev/zfile/refs/heads/main/LICENSE">MIT</a></dd>
+    </dl>
+</footer>
+</body>
+</html>
