@@ -1,6 +1,6 @@
 [project]
 name = "zfile"
-version = "0.1.0"
+version = "0.2.0"
 description = "A simple proxy service for published content in Zenodo"
 authors = [
     {name = "datadavev",email = "605409+datadavev@users.noreply.github.com"}
@@ -15,6 +15,7 @@ dependencies = [
     "pyyaml (>=6.0.2,<7.0.0)"
 ]
 
+[tool.poetry_bumpversion.file."zfile/__init__.py"]
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]

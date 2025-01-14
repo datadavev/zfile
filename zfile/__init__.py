@@ -7,10 +7,10 @@ import typing
 import httpx
 from httpx import Response
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 
 JSON_MEDIA = "application/json"
-TIMEOUT_SECS = 5.0
+TIMEOUT_SECS = 7.0
 LRU_CACHE_SIZE = 100
 
 @dataclasses.dataclass
@@ -60,11 +60,9 @@ def getZenodoPackageMetadata(doi:str)->typing.Dict[str, typing.Any]:
     ).json()
 
 
-@functools.lru_cache(maxsize=LRU_CACHE_SIZE)
-def getZenodoFileList(doi: str)-> typing.List[ZFile]:
-    response = getZenodoPackageMetadata(doi)
+def getZenodoFileList(linkset: typing.Dict[str, typing.Any])-> typing.List[ZFile]:
     results = []
-    for entry in response.get("files", []):
+    for entry in linkset.get("files", []):
         results.append(ZFile(
             id=entry["id"],
             key=entry["key"],
@@ -73,6 +71,7 @@ def getZenodoFileList(doi: str)-> typing.List[ZFile]:
             content=entry.get("links", {}).get("self")
         ))
     return results
+
 
 def getZenodoContentUrl(doi: str, filename:str )->str:
     files = getZenodoFileList(doi)

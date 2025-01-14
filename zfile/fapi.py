@@ -60,9 +60,11 @@ app.mount(
 
 
 def media_type_from_name(fname: str) -> typing.Optional[str]:
-    ext = os.path.splitext(fname)[1]
+    parts = fname.rsplit(".")
+    if len(parts) < 2:
+        return None
     try:
-        return MEDIA_TYPES[ext]
+        return MEDIA_TYPES[parts[1]]
     except KeyError:
         return None
 
@@ -74,11 +76,35 @@ async def get_favicon():
 
 
 @app.get("/", include_in_schema=False)
-def get_home():
+async def get_home():
     logging.info("get /")
     return starlette.responses.FileResponse(
         os.path.join(BASE_FOLDER, "static/index.html")
     )
+
+
+@app.get(
+    "/.info/{target:path}",
+    summary="Retrieve metadata about the given DOI/filename."
+)
+async def get_zenodo_target_info(target: str):
+    target = target.strip("/")
+    if target is None or len(target) < 7:
+        return get_home()
+    doi, fname = zfile.split_doi_file(target)
+    try:
+        linkset = zfile.getZenodoPackageMetadata(doi)
+        if fname is None:
+        # return the Zenodo package JSON
+            return linkset
+        files = zfile.getZenodoFileList(linkset)
+    except ValueError:
+        return {"error": f"No link headers returned for DOI {doi}"}
+    for f in files:
+        if f.key == fname:
+            return f
+    linkset_url = linkset.get("links",{}).get("self", "")
+    return {"error": f"File {fname} not found in linkset {doi} at {linkset_url}"}
 
 
 @app.get(
@@ -98,17 +124,38 @@ async def get_zenodo_target(request: fastapi.Request, target: typing.Optional[st
         return get_home()
     doi, fname = zfile.split_doi_file(target)
     L.info("DOI: %s fname:%s", doi, fname)
+    # resolve the doi to get the linkset
     try:
+        linkset = zfile.getZenodoPackageMetadata(doi)
         if fname is None:
         # return the Zenodo package JSON
-            return zfile.getZenodoPackageMetadata(doi)
-        url = zfile.getZenodoContentUrl(doi, fname)
+            return linkset
+        # Get the list of files in the linkset
+        files = zfile.getZenodoFileList(linkset)
     except ValueError:
         return {"error": f"No link headers returned for DOI {doi}"}
-    media_type = media_type_from_name(fname)
-    if media_type is not None:
-        fname_encoded = urllib.parse.quote(fname)
-        url = url.replace(fname, fname_encoded)
-        L.info("Proxying html for URL: %s", url)
-        return fastapi.responses.StreamingResponse(_streamer(url), media_type=media_type)
-    return fastapi.responses.RedirectResponse(url)
+    except Exception as e:
+        return {"error": str(e)}
+    # Find an entry in the files list matching the provided file name
+    for f in files:
+        if f.key == fname:
+            media_type = media_type_from_name(fname)
+            url = f.content
+            # Is this a media type to show in the browser?
+            if media_type is not None:
+                # Proxy the content and set the appropriate content-type
+                fname_encoded = urllib.parse.quote(fname)
+                url = url.replace(fname, fname_encoded)
+                L.info("Proxying html for URL: %s", url)
+                return fastapi.responses.StreamingResponse(_streamer(url), media_type=media_type)
+            # otherwise, redirect to the content location
+            return fastapi.responses.RedirectResponse(url)
+    # Fallback, return an error message
+    linkset_url = linkset.get("links",{}).get("self", "")
+    return {"error": f"File {fname} not found in linkset {doi} at {linkset_url}"}
+
+
+if __name__ == "__main__":
+    # This is used when debugging the app
+    import uvicorn
+    uvicorn.run(app, host="127.0.0.1", port=4000)
