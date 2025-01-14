@@ -137,6 +137,7 @@ async def get_zenodo_target(request: fastapi.Request, target: typing.Optional[st
     except Exception as e:
         return {"error": str(e)}
     # Find an entry in the files list matching the provided file name
+    fname = urllib.parse.unquote(fname, encoding="utf-8", errors="replace")
     for f in files:
         if f.key == fname:
             media_type = media_type_from_name(fname)

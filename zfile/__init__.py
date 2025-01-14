@@ -7,7 +7,7 @@ import typing
 import httpx
 from httpx import Response
 
-__version__ = "0.2.0"
+__version__ = "0.2.1"
 
 JSON_MEDIA = "application/json"
 TIMEOUT_SECS = 7.0
